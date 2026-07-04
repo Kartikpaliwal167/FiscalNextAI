@@ -1,5 +1,6 @@
 import tkinter as tk
 
+
 def create_dashboard(parent):
 
     title = tk.Label(
@@ -8,7 +9,6 @@ def create_dashboard(parent):
         font=("Arial", 28, "bold"),
         bg="#F5F7FA"
     )
-
     title.pack(pady=20)
 
     cards = tk.Frame(parent, bg="#F5F7FA")
@@ -40,6 +40,8 @@ def create_dashboard(parent):
             fg="green",
             font=("Arial", 22, "bold")
         ).pack(pady=(0, 20))
+
+
 def clear_parent(parent):
     for widget in parent.winfo_children():
-        widget.destroy()        
+        widget.destroy()

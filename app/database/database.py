@@ -236,3 +236,27 @@ def get_all_products():
     conn.close()
 
     return data
+
+
+def get_all_customers():
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        customer_name,
+        company_name,
+        gstin,
+        phone,
+        email,
+        state
+    FROM customers
+    ORDER BY customer_name
+    """)
+
+    data = cursor.fetchall()
+
+    conn.close()
+
+    return data

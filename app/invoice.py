@@ -6,7 +6,8 @@ from .database import (
     save_invoice,
     get_next_invoice_number,
     get_all_invoices,
-    get_all_customers
+    get_all_customers,
+    get_all_products
 )
 
 
@@ -293,6 +294,240 @@ def create_invoice(parent):
     )
 
     # =====================================================
+    # PRODUCT DETAILS
+    # =====================================================
+
+    product_frame = tk.LabelFrame(
+        invoice_card,
+        text="  Product Details  ",
+        font=("Arial", 11, "bold"),
+        bg="white",
+        fg="#1E293B",
+        padx=10,
+        pady=10
+    )
+
+    product_frame.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 15)
+    )
+
+    # Get products from database
+
+    products = get_all_products()
+
+    product_names = [
+        product[0] for product in products
+    ]
+
+    # Product Selection
+
+    tk.Label(
+        product_frame,
+        text="Product",
+        bg="white",
+        fg="#475569",
+        font=("Arial", 10)
+    ).grid(
+        row=0,
+        column=0,
+        padx=5,
+        pady=5
+    )
+
+    product_entry = ttk.Combobox(
+        product_frame,
+        values=product_names,
+        width=20,
+        state="readonly"
+    )
+
+    product_entry.grid(
+        row=1,
+        column=0,
+        padx=5,
+        pady=5
+    )
+
+    # Quantity
+
+    tk.Label(
+        product_frame,
+        text="Quantity",
+        bg="white",
+        fg="#475569",
+        font=("Arial", 10)
+    ).grid(
+        row=0,
+        column=1,
+        padx=5,
+        pady=5
+    )
+
+    quantity_entry = tk.Entry(
+        product_frame,
+        width=10
+    )
+
+    quantity_entry.grid(
+        row=1,
+        column=1,
+        padx=5,
+        pady=5
+    )
+
+    # Rate
+
+    tk.Label(
+        product_frame,
+        text="Rate",
+        bg="white",
+        fg="#475569",
+        font=("Arial", 10)
+    ).grid(
+        row=0,
+        column=2,
+        padx=5,
+        pady=5
+    )
+
+    rate_entry = tk.Entry(
+        product_frame,
+        width=12
+    )
+
+    rate_entry.grid(
+        row=1,
+        column=2,
+        padx=5,
+        pady=5
+    )
+
+    # GST
+
+    tk.Label(
+        product_frame,
+        text="GST %",
+        bg="white",
+        fg="#475569",
+        font=("Arial", 10)
+    ).grid(
+        row=0,
+        column=3,
+        padx=5,
+        pady=5
+    )
+
+    gst_entry = tk.Entry(
+        product_frame,
+        width=10
+    )
+
+    gst_entry.grid(
+        row=1,
+        column=3,
+        padx=5,
+        pady=5
+    )
+
+        # =====================================================
+    # AUTO FILL PRODUCT DETAILS
+    # =====================================================
+
+    def fill_product_details(event=None):
+
+        selected_product = product_entry.get()
+
+        for product in products:
+
+            if product[0] == selected_product:
+
+                gst = product[2]
+                price = product[3]
+
+                rate_entry.delete(0, tk.END)
+                rate_entry.insert(0, price)
+
+                gst_entry.delete(0, tk.END)
+                gst_entry.insert(0, gst)
+
+                break
+
+    product_entry.bind(
+        "<<ComboboxSelected>>",
+        fill_product_details
+    )
+
+    # Add Product Button
+
+    add_product_button = tk.Button(
+        product_frame,
+        text="Add Product",
+        bg="#2563EB",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=14,
+        relief="flat",
+        cursor="hand2"
+    )
+
+    add_product_button.grid(
+        row=1,
+        column=4,
+        padx=15,
+        pady=5
+    )
+
+        # =====================================================
+    # INVOICE PRODUCT TABLE
+    # =====================================================
+
+    product_table_frame = tk.Frame(
+        invoice_card,
+        bg="white"
+    )
+
+    product_table_frame.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 15)
+    )
+
+    product_columns = (
+        "Product",
+        "HSN",
+        "Quantity",
+        "Rate",
+        "GST %",
+        "Amount"
+    )
+
+    product_tree = ttk.Treeview(
+        product_table_frame,
+        columns=product_columns,
+        show="headings",
+        height=4
+    )
+
+    for col in product_columns:
+
+        product_tree.heading(
+            col,
+            text=col
+        )
+
+        product_tree.column(
+            col,
+            width=120,
+            anchor="center"
+        )
+
+    product_tree.pack(
+        fill="x"
+    )
+
+    # =====================================================
     # INVOICE HISTORY
     # =====================================================
 
@@ -324,7 +559,7 @@ def create_invoice(parent):
         history_frame,
         columns=columns,
         show="headings",
-        height=7
+        height=4
     )
 
     for col in columns:

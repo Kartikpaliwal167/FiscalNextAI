@@ -16,6 +16,10 @@ def create_invoice(parent):
     invoice_no = get_next_invoice_number()
     today = datetime.now().strftime("%d-%m-%Y")
 
+    invoice_total = 0.0
+    total_gst = 0.0
+    grand_total = 0.0
+
     # =====================================================
     # SCROLLABLE MAIN CONTAINER
     # =====================================================
@@ -538,26 +542,6 @@ def create_invoice(parent):
         fill_product_details
     )
 
-    # Add Product Button
-
-    add_product_button = tk.Button(
-        product_frame,
-        text="Add Product",
-        bg="#2563EB",
-        fg="white",
-        font=("Arial", 10, "bold"),
-        width=14,
-        relief="flat",
-        cursor="hand2"
-    )
-
-    add_product_button.grid(
-        row=1,
-        column=4,
-        padx=15,
-        pady=5
-    )
-
         # =====================================================
     # INVOICE PRODUCT TABLE
     # =====================================================
@@ -604,6 +588,210 @@ def create_invoice(parent):
 
     product_tree.pack(
         fill="x"
+    )
+    
+    # =====================================================
+    # ADD PRODUCT TO INVOICE
+    # =====================================================
+
+    def add_product():
+
+        nonlocal invoice_total, total_gst, grand_total
+
+        selected_product = product_entry.get()
+        quantity = quantity_entry.get().strip()
+        rate = rate_entry.get().strip()
+        gst = gst_entry.get().strip()
+
+        # Check empty fields
+
+        if (
+            selected_product == ""
+            or quantity == ""
+            or rate == ""
+            or gst == ""
+        ):
+
+            messagebox.showerror(
+                "Error",
+                "Please select a product and enter quantity."
+            )
+
+            return
+
+        # Check numeric values
+
+        try:
+
+            quantity = float(quantity)
+            rate = float(rate)
+            gst = float(gst)
+
+        except ValueError:
+
+            messagebox.showerror(
+                "Error",
+                "Quantity, Rate and GST must be numeric."
+            )
+
+            return
+
+        # Quantity validation
+
+        if quantity <= 0:
+
+            messagebox.showerror(
+                "Error",
+                "Quantity must be greater than zero."
+            )
+
+            return
+
+        # Find HSN Code
+
+        hsn_code = ""
+
+        for product in products:
+
+            if product[0] == selected_product:
+
+                hsn_code = product[1]
+
+                break
+
+        # Calculate amount before GST
+
+        amount = quantity * rate
+
+        invoice_total += amount
+
+        gst_amount = amount * gst / 100
+
+        total_gst += gst_amount
+
+        grand_total = invoice_total + total_gst
+
+        amount_entry.delete(0, tk.END)
+        amount_entry.insert(0, f"{grand_total:.2f}")
+
+        subtotal_label.config(text=f"Subtotal: Rs. {invoice_total:.2f}")
+        gst_total_label.config(text=f"Total GST: Rs. {total_gst:.2f}")
+        grand_total_label.config(text=f"Grand Total: Rs. {grand_total:.2f}")
+
+        # Add product to table
+
+        product_tree.insert(
+            "",
+            tk.END,
+            values=(
+                selected_product,
+                hsn_code,
+                quantity,
+                f"{rate:.2f}",
+                f"{gst:.2f}",
+                f"{amount:.2f}"
+            )
+        )
+
+        # Clear product fields
+
+        product_entry.set("")
+
+        quantity_entry.delete(
+            0,
+            tk.END
+        )
+
+        rate_entry.delete(
+            0,
+            tk.END
+        )
+
+        gst_entry.delete(
+            0,
+            tk.END
+        )
+
+        # =====================================================
+    # ADD PRODUCT BUTTON
+    # =====================================================
+
+    add_product_button = tk.Button(
+        product_frame,
+        text="Add Product",
+        command=add_product,
+        bg="#2563EB",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=14,
+        relief="flat",
+        cursor="hand2"
+    )
+
+    add_product_button.grid(
+        row=1,
+        column=4,
+        padx=15,
+       pady=5
+    )   
+
+        # =====================================================
+    # GST AND TOTALS SECTION
+    # =====================================================
+
+    totals_frame = tk.Frame(
+        invoice_card,
+        bg="#F8FAFC",
+        bd=1,
+        relief="solid"
+    )
+
+    totals_frame.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 15)
+    )
+
+    subtotal_label = tk.Label(
+    totals_frame,
+    text="Subtotal: Rs. 0.00",
+    bg="#F8FAFC",
+    fg="#475569",
+    font=("Arial", 11)
+)
+
+    subtotal_label.pack(
+        anchor="e",
+        padx=20,
+        pady=3
+    )
+
+    gst_total_label = tk.Label(
+        totals_frame,
+        text="Total GST: Rs. 0.00",
+        bg="#F8FAFC",
+        fg="#475569",
+        font=("Arial", 11)
+    )
+
+    gst_total_label.pack(
+        anchor="e",
+        padx=20,
+        pady=3
+    )
+
+    grand_total_label = tk.Label(
+        totals_frame,
+        text="Grand Total: Rs. 0.00",
+        bg="#E0E7FF",
+        fg="#1E293B",
+        font=("Arial", 13, "bold")
+    )
+
+    grand_total_label.pack(
+        anchor="e",
+        padx=20,
+        pady=5
     )
 
     # =====================================================

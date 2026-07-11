@@ -5,7 +5,8 @@ from datetime import datetime
 from .database import (
     save_invoice,
     get_next_invoice_number,
-    get_all_invoices
+    get_all_invoices,
+    get_all_customers
 )
 
 
@@ -243,10 +244,18 @@ def create_invoice(parent):
         sticky="w"
     )
 
-    customer_entry = tk.Entry(
+    customers = get_all_customers()
+
+    customer_names = [
+        customer[0] for customer in customers
+    ]
+
+    customer_entry = ttk.Combobox(
         customer_frame,
-        width=35,
-        font=("Arial", 11)
+        values=customer_names,
+        width=33,
+        font=("Arial", 11),
+        state="readonly"
     )
 
     customer_entry.grid(

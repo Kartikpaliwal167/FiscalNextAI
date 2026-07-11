@@ -17,17 +17,96 @@ def create_invoice(parent):
     today = datetime.now().strftime("%d-%m-%Y")
 
     # =====================================================
-    # MAIN CONTAINER
+    # SCROLLABLE MAIN CONTAINER
     # =====================================================
 
-    container = tk.Frame(
+    canvas = tk.Canvas(
         parent,
-        bg="#F5F7FA"
+        bg="#F5F7FA",
+        highlightthickness=0
     )
 
-    container.pack(
+    scrollbar = ttk.Scrollbar(
+        parent,
+        orient="vertical",
+        command=canvas.yview
+    )
+
+    container = tk.Frame(
+    canvas,
+    bg="#F5F7FA"
+    )
+
+    container_window = canvas.create_window(
+        (0, 0),
+        window=container,
+        anchor="nw"
+    )
+
+    canvas.configure(
+        yscrollcommand=scrollbar.set
+    )
+
+    scrollbar.pack(
+        side="right",
+        fill="y"
+    )
+
+    canvas.pack(
+        side="left",
         fill="both",
         expand=True
+    )
+
+    # =====================================================
+    # UPDATE SCROLL REGION
+    # =====================================================
+
+    def update_scroll_region(event):
+
+        canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+
+
+    container.bind(
+        "<Configure>",
+        update_scroll_region
+    )
+    
+    # =====================================================
+    # KEEP CONTENT WIDTH SAME AS CANVAS
+    # =====================================================
+
+    def resize_container(event):
+
+        canvas.itemconfig(
+            container_window,
+            width=event.width
+        )
+
+
+    canvas.bind(
+        "<Configure>",
+        resize_container
+    )
+
+
+    # =====================================================
+    # MOUSE WHEEL SCROLLING
+    # =====================================================
+
+    def mouse_scroll(event):
+
+        canvas.yview_scroll(
+            int(-1 * (event.delta / 120)),
+            "units"
+        )
+
+
+    canvas.bind_all(
+        "<MouseWheel>",
+        mouse_scroll
     )
 
     # =====================================================

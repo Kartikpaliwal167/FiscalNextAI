@@ -4,6 +4,7 @@ from .dashboard import create_dashboard, clear_parent
 from .invoice import create_invoice
 from .customer import create_customer
 from .product import create_product
+from .settings import create_settings
 from .database import init_db
 
 # -------------------- Window --------------------
@@ -38,6 +39,9 @@ def show_page(page_name):
 
     elif page_name == "Products":
         create_product(main)    
+
+    elif page_name == "Settings":
+        create_settings(main)
 
     else:
 

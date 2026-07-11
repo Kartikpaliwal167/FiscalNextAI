@@ -1,11 +1,14 @@
 import tkinter as tk
+import sqlite3
 from tkinter import ttk, messagebox
 from datetime import datetime
 
 from .database import (
-    save_invoice,
+    save_invoice_with_items,
     get_next_invoice_number,
     get_all_invoices,
+    get_invoice_by_number,
+    get_invoice_items,
     get_all_customers,
     get_all_products
 )
@@ -881,44 +884,308 @@ def create_invoice(parent):
     load_history()
 
     # =====================================================
+    # VIEW INVOICE DETAILS
+    # =====================================================
+
+    def view_invoice_details(event=None):
+
+        selected_rows = tree.selection()
+
+        if not selected_rows:
+            return
+
+        selected_invoice = tree.item(selected_rows[0], "values")
+
+        if not selected_invoice:
+            return
+
+        selected_invoice_no = selected_invoice[0]
+
+        try:
+
+            invoice = get_invoice_by_number(selected_invoice_no)
+            invoice_items = get_invoice_items(selected_invoice_no)
+
+        except sqlite3.Error as error:
+
+            messagebox.showerror(
+                "Database Error",
+                f"Unable to retrieve invoice details: {error}"
+            )
+
+            return
+
+        if invoice is None:
+
+            messagebox.showerror(
+                "Error",
+                "Invoice details could not be found."
+            )
+
+            return
+
+        invoice_no, customer, saved_grand_total, invoice_date = invoice
+
+        subtotal = 0.0
+        total_gst = 0.0
+
+        for product, hsn, quantity, rate, gst, item_amount in invoice_items:
+
+            amount = float(item_amount)
+            gst_amount = amount * float(gst) / 100
+
+            subtotal += amount
+            total_gst += gst_amount
+
+        calculated_grand_total = subtotal + total_gst
+
+        details_window = tk.Toplevel(invoice_card)
+        details_window.title("Invoice Details")
+        details_window.geometry("850x600")
+        details_window.configure(bg="#F5F7FA")
+
+        details_frame = tk.Frame(
+            details_window,
+            bg="white",
+            bd=1,
+            relief="solid"
+        )
+
+        details_frame.pack(
+            fill="both",
+            expand=True,
+            padx=20,
+            pady=20
+        )
+
+        tk.Label(
+            details_frame,
+            text="Invoice Details",
+            font=("Arial", 18, "bold"),
+            bg="white",
+            fg="#1E293B"
+        ).pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 10)
+        )
+
+        invoice_info_frame = tk.Frame(
+            details_frame,
+            bg="#F8FAFC"
+        )
+
+        invoice_info_frame.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        invoice_details = (
+            ("Invoice Number", invoice_no),
+            ("Invoice Date", invoice_date),
+            ("Customer Name", customer),
+            ("Saved Grand Total", f"Rs. {saved_grand_total:.2f}")
+        )
+
+        for column, (label, value) in enumerate(invoice_details):
+
+            tk.Label(
+                invoice_info_frame,
+                text=label,
+                font=("Arial", 9),
+                bg="#F8FAFC",
+                fg="#64748B"
+            ).grid(
+                row=0,
+                column=column,
+                padx=15,
+                pady=(12, 3),
+                sticky="w"
+            )
+
+            tk.Label(
+                invoice_info_frame,
+                text=value,
+                font=("Arial", 11, "bold"),
+                bg="#F8FAFC",
+                fg="#1E293B"
+            ).grid(
+                row=1,
+                column=column,
+                padx=15,
+                pady=(0, 12),
+                sticky="w"
+            )
+
+        item_columns = (
+            "Product",
+            "HSN",
+            "Quantity",
+            "Rate",
+            "GST %",
+            "Amount"
+        )
+
+        items_tree = ttk.Treeview(
+            details_frame,
+            columns=item_columns,
+            show="headings",
+            height=10
+        )
+
+        for column in item_columns:
+
+            items_tree.heading(column, text=column)
+            items_tree.column(column, width=125, anchor="center")
+
+        for product, hsn, quantity, rate, gst, item_amount in invoice_items:
+
+            items_tree.insert(
+                "",
+                tk.END,
+                values=(
+                    product,
+                    hsn,
+                    f"{quantity:.2f}",
+                    f"{rate:.2f}",
+                    f"{gst:.2f}",
+                    f"{item_amount:.2f}"
+                )
+            )
+
+        items_tree.pack(
+            fill="both",
+            expand=True,
+            padx=20,
+            pady=(0, 15)
+        )
+
+        totals_details_frame = tk.Frame(
+            details_frame,
+            bg="#F8FAFC",
+            bd=1,
+            relief="solid"
+        )
+
+        totals_details_frame.pack(
+            anchor="e",
+            padx=20,
+            pady=(0, 20)
+        )
+
+        tk.Label(
+            totals_details_frame,
+            text=f"Subtotal: Rs. {subtotal:.2f}",
+            font=("Arial", 11),
+            bg="#F8FAFC",
+            fg="#475569"
+        ).pack(
+            anchor="e",
+            padx=20,
+            pady=(10, 3)
+        )
+
+        tk.Label(
+            totals_details_frame,
+            text=f"Total GST: Rs. {total_gst:.2f}",
+            font=("Arial", 11),
+            bg="#F8FAFC",
+            fg="#475569"
+        ).pack(
+            anchor="e",
+            padx=20,
+            pady=3
+        )
+
+        tk.Label(
+            totals_details_frame,
+            text=f"Grand Total: Rs. {calculated_grand_total:.2f}",
+            font=("Arial", 13, "bold"),
+            bg="#E0E7FF",
+            fg="#1E293B"
+        ).pack(
+            anchor="e",
+            padx=20,
+            pady=(3, 10)
+        )
+
+    tree.bind("<Double-1>", view_invoice_details)
+
+    # =====================================================
     # SAVE INVOICE
     # =====================================================
 
     def generate_invoice():
 
         customer = customer_entry.get().strip()
-        amount = amount_entry.get().strip()
 
-        if customer == "" or amount == "":
+        if customer == "":
 
             messagebox.showerror(
                 "Error",
-                "Please fill all fields."
+                "Please select a customer."
+            )
+
+            return
+
+        product_rows = product_tree.get_children()
+
+        if not product_rows:
+
+            messagebox.showerror(
+                "Error",
+                "Please add at least one product."
+            )
+
+            return
+
+        invoice_items = []
+
+        try:
+
+            for row in product_rows:
+
+                product, hsn, quantity, rate, gst, item_amount = (
+                    product_tree.item(row, "values")
+                )
+
+                invoice_items.append((
+                    product,
+                    hsn,
+                    float(quantity),
+                    float(rate),
+                    float(gst),
+                    float(item_amount)
+                ))
+
+        except (TypeError, ValueError):
+
+            messagebox.showerror(
+                "Error",
+                "One or more invoice items contain invalid values."
             )
 
             return
 
         try:
 
-            amount = float(amount)
+            save_invoice_with_items(
+                invoice_no,
+                customer,
+                grand_total,
+                today,
+                invoice_items
+            )
 
-        except ValueError:
+        except sqlite3.Error as error:
 
             messagebox.showerror(
-                "Error",
-                "Amount must be numeric."
+                "Database Error",
+                f"Unable to save invoice: {error}"
             )
 
             return
-
-        new_invoice_no = get_next_invoice_number()
-
-        save_invoice(
-            new_invoice_no,
-            customer,
-            amount,
-            today
-        )
 
         customer_entry.delete(
             0,
